@@ -15,8 +15,7 @@
   var BASE_PX = 16;
   function fitSideName() {
     if (!sideName) return;
-    var isMobile = window.innerWidth <= 1024;
-    if (isMobile) { sideName.style.fontSize = ""; return; }
+    /* подгоняем на любой ширине: сайдбар вертикальный и на мобильных */
     sideName.style.fontSize = BASE_PX + "px";
     var len = sideName.scrollHeight;            /* длина строки в vertical-rl */
     var avail = window.innerHeight - 12;        /* минус вертикальные паддинги панели */

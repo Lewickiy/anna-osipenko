@@ -142,15 +142,17 @@ async function measure(cdp, w, h) {
 
   const cases = [
     [1440, 700], [1440, 900], [1440, 1080], [1440, 1300],
-    [1280, 800], [1920, 1080], [1024, 768], [390, 844],
+    [1280, 800], [1920, 1080],
+    [1024, 768], [768, 1024], [390, 844], [390, 700],
   ];
 
   let allOk = true;
   for (const [w, h] of cases) {
     const r = await measure(cdp, w, h);
-    const mobile = w <= 1024;
     const problems = [];
-    if (!mobile) {
+    /* сайдбар вертикальный на всех экранах — проверки единые */
+    {
+      if (r.writingMode !== "vertical-rl") problems.push("надпись не вертикальная: " + r.writingMode);
       if (!r.fitsVertically) problems.push("надпись не от края до края");
       if (r.clipped) problems.push("надпись обрезана");
       if (!r.noOverlap) problems.push("сайдбар перекрывает аккордеон");
@@ -164,7 +166,7 @@ async function measure(cdp, w, h) {
     if (problems.length) allOk = false;
 
     console.log(
-      `\n=== ${w}x${h} ${mobile ? "(мобильный режим)" : ""} — ${problems.length ? "ПРОБЛЕМЫ: " + problems.join("; ") : "OK"}`
+      `\n=== ${w}x${h} — ${problems.length ? "ПРОБЛЕМЫ: " + problems.join("; ") : "OK"}`
     );
     console.log(
       `  кегль ${r.fontSize}px, mode ${r.writingMode} | надпись: top=${r.name.top.toFixed(0)} bottom=${r.name.bottom.toFixed(0)} (панель ${r.side.top.toFixed(0)}–${r.side.bottom.toFixed(0)})` +
