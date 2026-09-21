@@ -106,6 +106,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   letter-spacing: 0.02em; /* малый межбуквенный интервал */
   white-space: nowrap;
   line-height: 1;
+  /* текст сидит чуть ниже центра: сверху воздуха на ~0.25em больше,
+     чем при чистом центрировании (≈ +7px при кегле шапки на ноутбуке) */
+  transform: translateY(0.25em);
 }
 
 .side-name .sep {
@@ -134,7 +137,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .acc-btn {
   width: 100%;
   display: grid;
-  grid-template-columns: 4.2rem 1fr 3.4rem;
+  grid-template-columns: 4.2rem 1fr;
   align-items: center;
   gap: 0.6rem;
   text-align: left;
@@ -159,7 +162,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .acc-btn:hover::before { transform: scaleY(1); }
 .acc-btn:hover { color: var(--bg); }
 .acc-btn:hover .acc-num { color: var(--bg); }
-.acc-btn:hover .acc-icon::before, .acc-btn:hover .acc-icon::after { background: var(--bg); }
 
 /* «призрачный» номер */
 .acc-num {
@@ -174,33 +176,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   color: var(--accent);
 }
 
-/*.is-open .acc-title {*/
-/*  color: var(--accent);*/
-/*}*/
-
 .acc-title {
   font-family: var(--serif);
   font-size: var(--title-size);
   font-weight: 500;
   line-height: 1.25;
 }
-
-/* плюс/минус */
-.acc-icon {
-  position: relative;
-  width: 14px;
-  height: 14px;
-  justify-self: end;
-}
-.acc-icon::before, .acc-icon::after {
-  content: "";
-  position: absolute;
-  background: var(--ink);
-  transition: transform 0.5s var(--ease), background 0.45s var(--ease);
-}
-.acc-icon::before { left: 0; top: 6px; width: 14px; height: 1.5px; }
-.acc-icon::after { left: 6.25px; top: 0; width: 1.5px; height: 14px; }
-.is-open .acc-icon::after { transform: rotate(90deg); }
 
 /* ---------- раскрывающиеся тела ---------- */
 .acc-body {
@@ -288,7 +269,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
   .layout { height: 100vh; height: 100dvh; }
 
-  .acc-btn { grid-template-columns: 2.6rem 1fr 2rem; padding: var(--head-pad-y) 1rem; }
+  .acc-btn { grid-template-columns: 2.6rem 1fr; padding: var(--head-pad-y) 1rem; }
   .acc-inner { padding: 0.2rem 1rem 1.6rem calc(2.6rem + 0.6rem + 1rem); }
   .row { grid-template-columns: 1fr; gap: 0.15rem; }
 }
@@ -297,7 +278,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 @media (max-width: 640px) {
   :root { --head-pad-y: 0.85rem; --title-size: 1.02rem; }
 
-  .acc-btn { grid-template-columns: 2.2rem 1fr 1.8rem; padding: var(--head-pad-y) 0.9rem; }
+  .acc-btn { grid-template-columns: 2.2rem 1fr; padding: var(--head-pad-y) 0.9rem; }
   .acc-num { font-size: 0.62rem; }
   .acc-inner { padding: 0.2rem 0.9rem 1.4rem calc(2.2rem + 0.6rem + 0.9rem); font-size: 0.9rem; }
   .contact-line { font-size: 1rem; }
