@@ -268,41 +268,24 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
    АДАПТИВ
    ============================================================ */
 
-/* --- планшет/ноутбук: сайдбар превращаем в горизонтальную шапку --- */
+/* --- планшет/телефон: сайдбар остаётся боковым и вертикальным ---
+   Кегль вертикальной надписи на всех экранах подгоняет JS —
+   медиазапросы ниже лишь уплотняют аккордеон. */
 @media (max-width: 1024px) {
-  body { overflow: auto; }
+  .layout { height: 100vh; height: 100dvh; }
 
-  .side {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    width: 100%;
-    height: auto;
-    padding: 1.1rem 1.4rem;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
-  }
-  .side-name { writing-mode: horizontal-tb; max-height: none; font-size: 1.05rem; }
-  .side-name .sep { margin: 0 0.5em; }
-  .layout { height: auto; flex-direction: column; }
-  .board { overflow-y: visible; flex: 1 1 auto; }
+  .side { padding: 0.25rem 0.4rem; }
 
-  .board { position: static; }
-
-  .acc-btn { grid-template-columns: 3rem 1fr 2.4rem; }
-  .acc-inner { padding: 0.3rem 1.4rem 1.8rem 4.4rem; }
+  .acc-btn { grid-template-columns: 2.6rem 1fr 2rem; padding: 0.9rem 1rem; }
+  .acc-inner { padding: 0.2rem 1rem 1.6rem calc(2.6rem + 0.6rem + 1rem); }
   .row { grid-template-columns: 1fr; gap: 0.15rem; }
 }
 
-/* --- телефон --- */
+/* --- телефон: ещё плотнее --- */
 @media (max-width: 640px) {
-  .side { padding: 0.85rem 1.1rem; }
-  .side-name { font-size: 0.95rem; }
-  .side-name .sep { margin: 0 0.4em; }
-
-  .acc-btn { grid-template-columns: 2.2rem 1fr 2rem; padding: 0.95rem 1.1rem; }
+  .acc-btn { grid-template-columns: 2.2rem 1fr 1.8rem; padding: 0.85rem 0.9rem; }
   .acc-num { font-size: 0.62rem; }
   .acc-title { font-size: 1.02rem; }
-  .acc-inner { padding: 0.2rem 1.1rem 1.6rem 3.3rem; font-size: 0.9rem; }
+  .acc-inner { padding: 0.2rem 0.9rem 1.4rem calc(2.2rem + 0.6rem + 0.9rem); font-size: 0.9rem; }
   .contact-line { font-size: 1rem; }
 }
