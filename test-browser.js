@@ -6,6 +6,11 @@ const CHROME = "/home/lewickiy/.cache/ms-playwright/chromium-1243/chrome-linux64
 const SITE = "http://127.0.0.1:8765/index.html";
 const { spawn } = require("child_process");
 
+if (typeof WebSocket === "undefined") {
+  /* Node 20 без глобального WebSocket — берём пакет ws из NODE_PATH */
+  global.WebSocket = require("ws");
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 class CDP {
@@ -63,17 +68,24 @@ const PAGE_CHECK = `
   const res = {
     fontSize: parseFloat(cs.fontSize),
     writingMode: cs.writingMode,
-    name: { top: nr.top, bottom: nr.bottom, height: nr.height, width: nr.width },
-    side: { top: sr.top, bottom: sr.bottom, height: sr.height, width: sr.width, right: sr.right },
+    name: { top: nr.top, bottom: nr.bottom, height: nr.height, width: nr.width, left: nr.left, right: nr.right },
+    side: { top: sr.top, bottom: sr.bottom, height: sr.height, width: sr.width, right: sr.right, bottomEdge: sr.bottom },
     boardLeft: br.left,
     boardWidth: br.width,
+    boardTop: br.top,
     firstWidth: fr.width,
+    fitsHorizontally: nr.left >= sr.left - 1.5 && nr.right <= sr.right + 1.5,
     fitsVertically: nr.top >= sr.top - 1.5 && nr.bottom <= sr.bottom + 1.5,
-    clipped: nr.height > sr.height + 1,
-    noOverlap: sr.right <= br.left + 0.5,
-    accordionRightOfSide: br.left >= sr.right - 0.5,
+    clipped: nr.width > sr.width + 1 || nr.height > sr.height + 1,
+    headerOnTop: sr.bottom <= br.top + 0.5,
+    noOverlap: sr.bottom <= br.top + 0.5,
+    accordionBelowHeader: br.top >= sr.bottom - 0.5,
+    headerGap: br.top - sr.bottom,
+    gapEqualsHeader: Math.abs((br.top - sr.bottom) - sr.height) < 2,
+    containerMax: sr.width <= 902,
+    centered: Math.abs(sr.left - (window.innerWidth - sr.width) / 2) < 2,
     accordionFullWidth: Math.abs(br.width - fr.width) < 2,
-    sideThin: sr.width < window.innerWidth * 0.14,
+    sideThin: sr.height < window.innerHeight * 0.14,
   };
   /* открываем второй блок и проверяем раскрытие */
   second.querySelector('.acc-btn').click();
@@ -150,14 +162,18 @@ async function measure(cdp, w, h) {
   for (const [w, h] of cases) {
     const r = await measure(cdp, w, h);
     const problems = [];
-    /* сайдбар вертикальный на всех экранах — проверки единые */
+    /* шапка горизонтальная сверху на всех экранах — проверки единые */
     {
-      if (r.writingMode !== "vertical-rl") problems.push("надпись не вертикальная: " + r.writingMode);
-      if (!r.fitsVertically) problems.push("надпись не от края до края");
+      if (r.writingMode === "vertical-rl") problems.push("надпись всё ещё вертикальная");
+      if (!r.fitsHorizontally) problems.push("надпись не от края до края шапки");
+      if (!r.fitsVertically) problems.push("надпись вылезает по высоте шапки");
       if (r.clipped) problems.push("надпись обрезана");
-      if (!r.noOverlap) problems.push("сайдбар перекрывает аккордеон");
-      if (!r.accordionRightOfSide) problems.push("аккордеон левее сайдбара");
-      if (!r.sideThin) problems.push("сайдбар шире 14% экрана");
+      if (!r.noOverlap) problems.push("шапка перекрывает аккордеон");
+      if (!r.accordionBelowHeader) problems.push("аккордеон выше шапки");
+      if (!r.gapEqualsHeader) problems.push("отступ шапка↔аккордеон не равен высоте шапки (" + (r.headerGap || 0).toFixed(0) + "px против " + r.side.height.toFixed(0) + "px)");
+      if (!r.containerMax) problems.push("контейнер шире 900px: " + r.side.width.toFixed(0));
+      if (!r.centered) problems.push("контейнер не по центру");
+      if (!r.sideThin) problems.push("шапка выше 14% экрана");
     }
     if (!r.accordion.openedByClick) problems.push("клик не открывает блок");
     if (!r.accordion.ariaExpanded_ok !== false && r.accordion.ariaExpanded !== "true") problems.push("aria-expanded не обновился");
@@ -169,8 +185,8 @@ async function measure(cdp, w, h) {
       `\n=== ${w}x${h} — ${problems.length ? "ПРОБЛЕМЫ: " + problems.join("; ") : "OK"}`
     );
     console.log(
-      `  кегль ${r.fontSize}px, mode ${r.writingMode} | надпись: top=${r.name.top.toFixed(0)} bottom=${r.name.bottom.toFixed(0)} (панель ${r.side.top.toFixed(0)}–${r.side.bottom.toFixed(0)})` +
-      ` | сайдбар w=${r.side.width.toFixed(0)} right=${r.side.right.toFixed(0)} | аккордеон left=${r.boardLeft.toFixed(0)} w=${r.boardWidth.toFixed(0)}` +
+      `  кегль ${r.fontSize}px, mode ${r.writingMode} | надпись: left=${r.name.left.toFixed(0)} right=${r.name.right.toFixed(0)} (шапка ${r.side.width.toFixed(0)}x${r.side.height.toFixed(0)})` +
+      ` | шапка top=${r.side.top.toFixed(0)} bottom=${r.side.bottomEdge.toFixed(0)} | аккордеон top=${r.boardTop.toFixed(0)} w=${r.boardWidth.toFixed(0)}` +
       ` | аккордеон: open=${r.accordion.openedByClick} close=${r.accordion.closedBySecondClick} clip=${r.accordion.bodyClipped}px`
     );
   }

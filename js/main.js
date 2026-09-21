@@ -6,22 +6,24 @@
 
   var items = Array.prototype.slice.call(document.querySelectorAll(".acc-item"));
 
-  /* ---------- подгонка кегля вертикальной надписи под высоту экрана ----------
+  /* ---------- подгонка кегля горизонтальной надписи под ширину экрана ----------
      Строка «Анна Осипенко · Режиссёр-постановщик · Куратор» должна тянуться
-     от низа до верха панели. Измеряем фактическую длину при базовом кегле
-     и масштабируем пропорционально доступной высоте. Полоса становится
-     чуть шире вместе с буквами — баланс сохраняется. */
+     от края до края шапки. Измеряем фактическую длину при базовом кегле
+     и масштабируем пропорционально доступной ширине. */
   var sideName = document.getElementById("sideName");
   var BASE_PX = 16;
   function fitSideName() {
     if (!sideName) return;
-    /* подгоняем на любой ширине: сайдбар вертикальный и на мобильных */
+    /* подгоняем по фактической ширине контейнера (≤ 900px), а не окна */
+    var side = document.getElementById("side");
     sideName.style.fontSize = BASE_PX + "px";
-    var len = sideName.scrollHeight;            /* длина строки в vertical-rl */
-    var avail = window.innerHeight - 12;        /* минус вертикальные паддинги панели */
+    var len = sideName.scrollWidth;             /* длина строки по горизонтали */
+    var avail = side ? side.clientWidth - 12 : window.innerWidth - 12;
     if (len > 0 && avail > 0) {
       var size = BASE_PX * (avail / len);
-      sideName.style.fontSize = Math.max(9, Math.min(size, 72)).toFixed(2) + "px";
+      /* не выше внутренней высоты шапки — она равна строке заголовка аккордеона */
+      var maxByH = side ? side.clientHeight : Infinity;
+      sideName.style.fontSize = Math.max(9, Math.min(size, maxByH, 72)).toFixed(2) + "px";
     }
   }
   fitSideName();
