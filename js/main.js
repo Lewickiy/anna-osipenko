@@ -1,5 +1,5 @@
 /* ============================================================
-   Anna Osipenko — accordion interactions
+   Anna Osipenko — accordion interactions.
    ============================================================ */
 (function () {
   "use strict";
