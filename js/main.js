@@ -1,108 +1,91 @@
 /* ============================================================
-   Anna Osipenko — interactions: reveals, menu, accordion
+   Anna Osipenko — accordion interactions
    ============================================================ */
 (function () {
   "use strict";
 
-  /* ---------- elements ---------- */
-  var menuToggle = document.getElementById("menuToggle");
-  var siteNav = document.getElementById("siteNav");
-  var header = document.getElementById("siteHeader");
+  var items = Array.prototype.slice.call(document.querySelectorAll(".acc-item"));
 
-  /* ---------- header state ---------- */
-  function onScroll() {
-    header.classList.toggle("scrolled", window.scrollY > 24);
+  /* ---------- подгонка кегля вертикальной надписи под высоту экрана ----------
+     Строка «Анна Осипенко · Режиссёр-постановщик · Куратор» должна тянуться
+     от низа до верха панели. Измеряем фактическую длину при базовом кегле
+     и масштабируем пропорционально доступной высоте. Полоса становится
+     чуть шире вместе с буквами — баланс сохраняется. */
+  var sideName = document.getElementById("sideName");
+  var BASE_PX = 16;
+  function fitSideName() {
+    if (!sideName) return;
+    var isMobile = window.innerWidth <= 1024;
+    if (isMobile) { sideName.style.fontSize = ""; return; }
+    sideName.style.fontSize = BASE_PX + "px";
+    var len = sideName.scrollHeight;            /* длина строки в vertical-rl */
+    var avail = window.innerHeight - 12;        /* минус вертикальные паддинги панели */
+    if (len > 0 && avail > 0) {
+      var size = BASE_PX * (avail / len);
+      sideName.style.fontSize = Math.max(9, Math.min(size, 72)).toFixed(2) + "px";
+    }
   }
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
-
-  /* ---------- mobile menu ---------- */
-  menuToggle.addEventListener("click", function () {
-    var open = siteNav.classList.toggle("open");
-    menuToggle.classList.toggle("open", open);
-  });
-  siteNav.querySelectorAll("a").forEach(function (a) {
-    a.addEventListener("click", function () {
-      siteNav.classList.remove("open");
-      menuToggle.classList.remove("open");
-    });
-  });
-
-  /* ---------- reveal on scroll ---------- */
-  var revealEls = document.querySelectorAll(".reveal");
-  if ("IntersectionObserver" in window) {
-    var io = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-            io.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -6% 0px" }
-    );
-    revealEls.forEach(function (el) { io.observe(el); });
-  } else {
-    revealEls.forEach(function (el) { el.classList.add("visible"); });
+  fitSideName();
+  window.addEventListener("resize", fitSideName);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fitSideName);
   }
 
-  /* ---------- productions accordion ---------- */
-  document.querySelectorAll(".prod-row").forEach(function (btn) {
+  function setBodyHeight(item, open) {
+    var body = item.querySelector(".acc-body");
+    body.style.maxHeight = open ? body.scrollHeight + "px" : "0px";
+  }
+
+  function setOpen(item, open) {
+    var btn = item.querySelector(".acc-btn");
+    item.classList.toggle("is-open", open);
+    btn.setAttribute("aria-expanded", String(open));
+    setBodyHeight(item, open);
+  }
+
+  /* --- открытие/закрытие: открыт один блок, повторный клик закрывает --- */
+  items.forEach(function (item) {
+    var btn = item.querySelector(".acc-btn");
     btn.addEventListener("click", function () {
-      var item = btn.closest(".prod-item");
-      var detail = item.querySelector(".prod-detail");
-      var isOpen = item.classList.contains("open");
+      var willOpen = !item.classList.contains("is-open");
 
-      document.querySelectorAll(".prod-item.open").forEach(function (other) {
-        if (other !== item) {
-          other.classList.remove("open");
-          other.querySelector(".prod-row").setAttribute("aria-expanded", "false");
-          other.querySelector(".prod-detail").style.maxHeight = "";
-        }
+      items.forEach(function (other) {
+        if (other !== item && other.classList.contains("is-open")) setOpen(other, false);
       });
 
-      item.classList.toggle("open", !isOpen);
-      btn.setAttribute("aria-expanded", String(!isOpen));
-      detail.style.maxHeight = !isOpen ? detail.scrollHeight + "px" : "";
+      setOpen(item, willOpen);
+
+      /* подравнять высоту, если размеры изменились (шрифты, зум) */
+      if (willOpen) {
+        window.requestAnimationFrame(function () {
+          var body = item.querySelector(".acc-body");
+          body.style.maxHeight = body.scrollHeight + "px";
+        });
+      }
     });
   });
 
-  /* ---------- animated counters ---------- */
-  var counters = document.querySelectorAll(".num-val");
-  function animateCounter(el) {
-    var target = parseInt(el.getAttribute("data-count"), 10) || 0;
-    var start = null;
-    var dur = 1400;
-    function step(ts) {
-      if (!start) start = ts;
-      var p = Math.min((ts - start) / dur, 1);
-      var eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = String(Math.round(target * eased));
-      if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-  if ("IntersectionObserver" in window) {
-    var cio = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            animateCounter(entry.target);
-            cio.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.6 }
-    );
-    counters.forEach(function (el) { cio.observe(el); });
-  } else {
-    counters.forEach(function (el) {
-      el.textContent = el.getAttribute("data-count");
-    });
-  }
+  /* --- доступность: навигация стрелками по заголовкам --- */
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    var idx = items.findIndex(function (it) { return it.contains(document.activeElement); });
+    if (idx === -1) return;
+    e.preventDefault();
+    var next = e.key === "ArrowDown" ? (idx + 1) % items.length : (idx - 1 + items.length) % items.length;
+    items[next].querySelector(".acc-btn").focus();
+  });
 
-  /* ---------- year ---------- */
-  var yearEl = document.getElementById("year");
-  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+  /* --- пересчёт высоты открытого блока при ресайзе --- */
+  var rt;
+  window.addEventListener("resize", function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () {
+      fitSideName();
+      var open = document.querySelector(".acc-item.is-open");
+      if (open) {
+        var body = open.querySelector(".acc-body");
+        body.style.maxHeight = body.scrollHeight + "px";
+      }
+    }, 150);
+  });
 })();
